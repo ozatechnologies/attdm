@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>In/Out Attendance</title>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <title>Attendance System</title>
+  <!-- QRCode.js for generating QR -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
@@ -20,7 +21,7 @@
     
     .card {
       width: 100%;
-      max-width: 400px;
+      max-width: 420px;
       background: #1e293b;
       border-radius: 20px;
       overflow: hidden;
@@ -39,28 +40,44 @@
     
     .body { padding: 25px; }
     
-    #reader {
-      width: 100% !important;
-      border-radius: 12px !important;
-      overflow: hidden !important;
+    /* QR Display Section */
+    .qr-section {
+      text-align: center;
       margin-bottom: 20px;
-    }
-    
-    .btn-cam {
-      width: 100%;
-      padding: 14px;
-      border: none;
+      padding: 20px;
+      background: #0f172a;
       border-radius: 12px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      margin-bottom: 15px;
+      border: 2px dashed #334155;
     }
     
-    .btn-start { background: #3b82f6; color: white; }
-    .btn-start:hover { background: #2563eb; }
-    .btn-stop { background: #ef4444; color: white; display: none; }
+    .qr-section h3 {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin: 10px auto;
+    }
+    
+    .qr-section p {
+      color: #64748b;
+      font-size: 0.8rem;
+      margin-top: 10px;
+    }
+    
+    /* Form Section */
+    .form-section {
+      display: none;
+    }
+    
+    .form-section.active {
+      display: block;
+    }
     
     .form-group { margin-bottom: 15px; }
     
@@ -166,41 +183,81 @@
     
     @keyframes spin { to { transform: rotate(360deg); } }
     
-    .scan-hint {
+    .success-check {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+    
+    .divider {
+      height: 1px;
+      background: #334155;
+      margin: 20px 0;
+    }
+    
+    .scan-text {
       text-align: center;
       color: #64748b;
       font-size: 0.85rem;
-      margin-top: 10px;
     }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="header">
-      <h1>🎯 In/Out System</h1>
-      <p>Scan QR → Select Token → Done</p>
+      <h1>🎯 Attendance System</h1>
+      <p>Scan QR → Enter Token → Log In/Out</p>
     </div>
     
     <div class="body">
-      <div id="reader"></div>
-      <button class="btn-cam btn-start" id="startBtn" onclick="startCam()">📷 Open Camera</button>
-      <button class="btn-cam btn-stop" id="stopBtn" onclick="stopCam()">⏹ Stop Camera</button>
-      <p class="scan-hint">Or skip camera and fill below</p>
       
-      <div class="form-group">
-        <label>Token Number (1-10)</label>
-        <div class="token-grid" id="tokenGrid"></div>
+      <!-- QR CODE DISPLAY (for scanning) -->
+      <div id="qrDisplay" class="qr-section">
+        <h3>📱 Scan This QR to Log Attendance</h3>
+        <div id="qrcode"></div>
+        <p>Point your phone camera here</p>
       </div>
       
-      <div class="form-group">
-        <label>Type</label>
-        <div class="type-toggle">
-          <button class="type-btn selected" onclick="setType('Entry', this)">🟢 Entry</button>
-          <button class="type-btn exit" onclick="setType('Exit', this)">🟠 Exit</button>
+      <div class="divider"></div>
+      
+      <!-- ATTENDANCE FORM (shown when page opened via QR scan) -->
+      <div id="formSection" class="form-section">
+        <p class="scan-text" style="color:#6ee7b7; margin-bottom:15px;">✅ QR Scanned! Now log your attendance</p>
+        
+        <div class="form-group">
+          <label>Token Number (1-10)</label>
+          <div class="token-grid" id="tokenGrid"></div>
         </div>
+        
+        <div class="form-group">
+          <label>Type</label>
+          <div class="type-toggle">
+            <button class="type-btn selected" onclick="setType('Entry', this)">🟢 Entry</button>
+            <button class="type-btn exit" onclick="setType('Exit', this)">🟠 Exit</button>
+          </div>
+        </div>
+        
+        <button class="btn-submit" id="submitBtn" onclick="submit()">✅ OK - Log Attendance</button>
       </div>
       
-      <button class="btn-submit" id="submitBtn" onclick="submit()">✅ OK - Log Attendance</button>
+      <!-- MANUAL FORM (always visible for direct access) -->
+      <div id="manualForm">
+        <p class="scan-text" style="margin-bottom:15px;">Or enter directly below:</p>
+        
+        <div class="form-group">
+          <label>Token Number (1-10)</label>
+          <div class="token-grid" id="tokenGridManual"></div>
+        </div>
+        
+        <div class="form-group">
+          <label>Type</label>
+          <div class="type-toggle">
+            <button class="type-btn selected" onclick="setType('Entry', this)">🟢 Entry</button>
+            <button class="type-btn exit" onclick="setType('Exit', this)">🟠 Exit</button>
+          </div>
+        </div>
+        
+        <button class="btn-submit" id="submitBtnManual" onclick="submit()">✅ OK - Log Attendance</button>
+      </div>
       
       <div class="spinner" id="spinner"></div>
       <div id="result"></div>
@@ -209,23 +266,32 @@
 
   <script>
     // 🔴 REPLACE THIS WITH YOUR ACTUAL GOOGLE APPS SCRIPT WEB APP URL
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwqeIxkHN7onuEb0EnbvpNXgb0GBPXYiwdEZbBgDOEqZbeWm_pwsY4VK7yJppnEqRbvMQ/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzxxxxxxxxxxxxxxxxxxxxxxxx/exec';
     
-    let scanner;
+    // Get current page URL (for QR generation)
+    const CURRENT_URL = window.location.href.split('?')[0];
+    
     let selectedToken = null;
     let selectedType = 'Entry';
     
-    const grid = document.getElementById('tokenGrid');
-    for (let i = 1; i <= 10; i++) {
-      const btn = document.createElement('button');
-      btn.className = 'token-btn';
-      btn.textContent = i;
-      btn.onclick = () => selectToken(i, btn);
-      grid.appendChild(btn);
+    // Build token buttons for both grids
+    function buildTokenGrid(containerId) {
+      const grid = document.getElementById(containerId);
+      for (let i = 1; i <= 10; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'token-btn';
+        btn.textContent = i;
+        btn.onclick = function() { selectToken(i, this); };
+        grid.appendChild(btn);
+      }
     }
+    
+    buildTokenGrid('tokenGrid');
+    buildTokenGrid('tokenGridManual');
     
     function selectToken(num, btn) {
       selectedToken = num;
+      // Remove selected from ALL token buttons
       document.querySelectorAll('.token-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
     }
@@ -236,71 +302,86 @@
       btn.classList.add('selected');
     }
     
-    function startCam() {
-      scanner = new Html5Qrcode('reader');
-      scanner.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 200, height: 200 } },
-        (text) => {
-          beep();
-          document.querySelector('.scan-hint').textContent = '✅ QR Scanned! Now select token & type';
-          document.querySelector('.scan-hint').style.color = '#6ee7b7';
-        }
-      ).then(() => {
-        document.getElementById('startBtn').style.display = 'none';
-        document.getElementById('stopBtn').style.display = 'block';
+    // Generate QR Code pointing to this page
+    function generateQR() {
+      const qrContainer = document.getElementById('qrcode');
+      qrContainer.innerHTML = '';
+      new QRCode(qrContainer, {
+        text: CURRENT_URL,
+        width: 200,
+        height: 200,
+        colorDark: '#1e293b',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
       });
     }
     
-    function stopCam() {
-      if (scanner) {
-        scanner.stop().then(() => {
-          document.getElementById('startBtn').style.display = 'block';
-          document.getElementById('stopBtn').style.display = 'none';
-        });
+    // Check if opened from QR scan (any query params)
+    function checkQRScan() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.toString().length > 0) {
+        // Hide QR, show form prominently
+        document.getElementById('qrDisplay').style.display = 'none';
+        document.getElementById('manualForm').style.display = 'none';
+        document.getElementById('formSection').classList.add('active');
       }
     }
     
     function submit() {
       if (!selectedToken) {
-        showResult('❌ Select a token number!', 'error');
+        showResult('❌ Select a token number (1-10)!', 'error');
         return;
       }
       
       document.getElementById('submitBtn').disabled = true;
+      document.getElementById('submitBtnManual').disabled = true;
       document.getElementById('spinner').style.display = 'block';
       document.getElementById('result').style.display = 'none';
       
-      const url = `${GAS_URL}?action=log&token=${selectedToken}&type=${selectedType}`;
+      // Use JSONP to avoid CORS issues with Google Apps Script
+      const callbackName = 'handleResponse_' + Date.now();
+      window[callbackName] = function(data) {
+        handleResponse(data);
+        delete window[callbackName];
+        document.head.removeChild(script);
+      };
       
-      fetch(url)
-        .then(r => r.json())
-        .then(data => {
-          document.getElementById('spinner').style.display = 'none';
-          document.getElementById('submitBtn').disabled = false;
-          
-          if (data.success) {
-            showResult(data.message, 'success');
-            beep();
-            selectedToken = null;
-            document.querySelectorAll('.token-btn').forEach(b => b.classList.remove('selected'));
-          } else {
-            showResult(data.message, 'error');
-          }
-        })
-        .catch(err => {
-          document.getElementById('spinner').style.display = 'none';
-          document.getElementById('submitBtn').disabled = false;
-          showResult('❌ Network error', 'error');
-        });
+      const script = document.createElement('script');
+      script.src = `${GAS_URL}?action=log&token=${selectedToken}&type=${selectedType}&callback=${callbackName}`;
+      document.head.appendChild(script);
+      
+      // Fallback timeout
+      setTimeout(() => {
+        if (window[callbackName]) {
+          delete window[callbackName];
+          document.head.removeChild(script);
+          handleResponse({ success: false, message: '❌ Request timed out' });
+        }
+      }, 10000);
+    }
+    
+    function handleResponse(data) {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('submitBtn').disabled = false;
+      document.getElementById('submitBtnManual').disabled = false;
+      
+      if (data.success) {
+        showResult(`<div class="success-check">✅</div>${data.message}`, 'success');
+        beep();
+        // Reset
+        selectedToken = null;
+        document.querySelectorAll('.token-btn').forEach(b => b.classList.remove('selected'));
+      } else {
+        showResult(data.message, 'error');
+      }
     }
     
     function showResult(msg, type) {
       const r = document.getElementById('result');
       r.className = type;
-      r.textContent = msg;
+      r.innerHTML = msg;
       r.style.display = 'block';
-      setTimeout(() => { r.style.display = 'none'; }, 3000);
+      setTimeout(() => { r.style.display = 'none'; }, 4000);
     }
     
     function beep() {
@@ -310,12 +391,16 @@
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.frequency.value = 1000;
-        gain.gain.value = 0.2;
+        osc.frequency.value = 1200;
+        gain.gain.value = 0.3;
         osc.start();
-        osc.stop(ctx.currentTime + 0.1);
+        osc.stop(ctx.currentTime + 0.2);
       } catch(e) {}
     }
+    
+    // Initialize
+    generateQR();
+    checkQRScan();
   </script>
 </body>
 </html>
